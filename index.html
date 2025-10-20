@@ -150,9 +150,18 @@
                     [parseFloat(item.latitude), parseFloat(item.longitude)],
                     { radius: 8, color: '#ff7800', weight: 1, opacity: 1, fillOpacity: 0.8 }
                 ).bindPopup(`
-                    <strong>Navn: </strong>${item.navn || 'Ukendt'}<br>
-                    <strong>Alder: </strong>${item.age || 'Ukendt'}<br>
-                    <strong>Erhverv: </strong>${item.Erhverv || 'Ukendt'}
+                    <strong>Navn: </strong>${item.navn || 'Ikke tilgængelig'}
+                    <br> <strong>Alder: </strong>${item.age || 'Ikke tilgængelig'}
+                    <br> <strong>Køn: </strong>${item.køn || 'Ikke tilgængelig'}
+                    <br> <strong>Fødselsdato: </strong>${item.fødselsdato || 'Ikke tilgængelig'}
+                    <br> <strong>Erhverv: </strong>${item.Erhverv || 'Ikke tilgængelig'}
+                    <br> <strong>Husstandsnummer: </strong>${item.Husstands_familienr || 'Ikke tilgængelig'}
+                    <br> <strong>Matrikelnummer: </strong>${item.Matr_nr_adresse || 'Ikke tilgængelig'}
+                    <br> <strong>Civilstand: </strong>${item.Civilstand || 'Ikke tilgængelig'}
+                    <br> <strong>Hvornår de blev gift: </strong>${item.hvornår_gift || 'Ikke tilgængelig'}
+                    <br> <strong>Stilling i husstanden: </strong>${item.Stilling_i_husstanden || 'Ikke tilgængelig'}
+                    <br> <strong>Fødested: </strong>${item.fødested || 'Ikke tilgængelig'}
+                    <br> <strong>Trossamfund: </strong>${item.trossamfund || 'Ikke tilgængelig'} );
                 `);
                 markers.addLayer(circleMarker);
             });
