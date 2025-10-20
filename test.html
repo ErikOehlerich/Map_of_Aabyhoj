@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Kort med Flere Kortlag, Søgning og Måleværktøj</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <!-- MarkerCluster, Search, Measure CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 600px;
+            width: 60%;
+            margin: 0 auto;
+            position: relative;
+        }
+        #search-container, #fullscreen-btn {
+            position: fixed;
+            z-index: 1000;
+            background-color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #search-container {
+            top: 75px;
+            left: 5px;
+            width: 250px;
+        }
+        #search-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        #fullscreen-btn {
+            top: 120px;
+            left: 5px;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #footer {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kort over Åbyhøj i 1901</h1>
+    <div id="search-container">
+        <input id="search-input" type="text" placeholder="Søg efter navne..."/>
+    </div>
+    <div id="fullscreen-btn">
+        <button id="fullscreen-toggle">Fuldskærm</button>
+    </div>
+    <div id="map"></div>
+    <div id="footer">Lavet af Erik Luis Lanuza Oehlerich</div>
+
+    <!-- Leaflet & plugins -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+
+    <script>
+        // Initialiser kort
+        var map = L.map('map').setView([56.1497418, 10.1598746], 13);
+
+        // Baggrundslag
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        var googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '© Google',
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            maxZoom: 20
+        });
+
+        var googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            attribution: '© Google',
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            maxZoom: 20
+        });
+
+        // ✅ Brug lokale tiles fra GitHub Pages
+        var customTiles = L.tileLayer('./tiles/{z}/{x}/{y}.png', {
+            attribution: '© Åbyhøj 1901',
+            maxZoom: 19,
+            minZoom: 0
+        }).addTo(map);
+
+        var baseLayers = {
+            "OpenStreetMap": osm,
+            "Google Satellite": googleSat,
+            "Google Streets": googleStreets
+        };
+
+        var overlays = {
+            "Åbyhøj 1901": customTiles
+        };
+
+        L.control.layers(baseLayers, overlays).addTo(map);
+
+        // Marker cluster setup
+        var markers = L.markerClusterGroup({
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true
+        });
+
+        var allData = [];
+
+        // Hent data
+        fetch('totalcensus2.json')
+            .then(response => response.json())
+            .then(data => {
+                var dataArray = data['R csv'];
+                if (Array.isArray(dataArray)) {
+                    allData = dataArray;
+                    updateMarkers(allData);
+                }
+            })
+            .catch(error => console.error('Fejl ved hentning af data:', error));
+
+        function updateMarkers(dataArray) {
+            markers.clearLayers();
+            dataArray.forEach(item => {
+                var circleMarker = L.circleMarker(
+                    [parseFloat(item.latitude), parseFloat(item.longitude)],
+                    { radius: 8, color: '#ff7800', weight: 1, opacity: 1, fillOpacity: 0.8 }
+                ).bindPopup(`
+                    <strong>Navn: </strong>${item.navn || 'Ukendt'}<br>
+                    <strong>Alder: </strong>${item.age || 'Ukendt'}<br>
+                    <strong>Erhverv: </strong>${item.Erhverv || 'Ukendt'}
+                `);
+                markers.addLayer(circleMarker);
+            });
+            map.addLayer(markers);
+        }
+
+        document.getElementById('search-input').addEventListener('input', function() {
+            var searchTerm = this.value.toLowerCase();
+            var filtered = allData.filter(item => item.navn && item.navn.toLowerCase().includes(searchTerm));
+            updateMarkers(filtered);
+        });
+
+        L.control.measure({
+            position: 'topright',
+            primaryLengthUnit: 'kilometers',
+            secondaryLengthUnit: 'meters',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        }).addTo(map);
+
+        document.getElementById('fullscreen-toggle').addEventListener('click', function() {
+            var el = document.getElementById('map');
+            if (!document.fullscreenElement) {
+                el.requestFullscreen();
+                this.textContent = 'Luk fuldskærm';
+            } else {
+                document.exitFullscreen();
+                this.textContent = 'Fuldskærm';
+            }
+        });
+    </script>
+</body>
+</html>
